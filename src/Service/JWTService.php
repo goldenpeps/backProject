@@ -4,6 +4,7 @@ namespace App\Service;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Firebase\JWT\ExpiredException;
 
 class JWTService
 {
@@ -42,5 +43,67 @@ class JWTService
     public function isTokenValid(string $token): bool
     {
         return $this->decodeToken($token) !== null;
+    }
+
+    /**
+     * Alias for isTokenValid (backward compatibility)
+     */
+    public function isValide(string $token): bool
+    {
+        return $this->isTokenValid($token);
+    }
+
+    /**
+     * Check if token is expired
+     */
+    public function isExpired(string $token): bool
+    {
+        try {
+            JWT::decode($token, new Key($this->secret, 'HS256'));
+            return false;
+        } catch (ExpiredException $e) {
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Verify token signature
+     */
+    public function check(string $token, string $secret): bool
+    {
+        try {
+            JWT::decode($token, new Key($secret, 'HS256'));
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Get payload from token
+     */
+    public function getPayload(string $token): ?array
+    {
+        return $this->decodeToken($token);
+    }
+
+    /**
+     * Generate token with header, payload and secret (backward compatibility)
+     */
+    public function generate(array $header, array $payload, string $secret): string
+    {
+        // Store original secret temporarily to use new one
+        $originalSecret = $this->secret;
+        $this->secret = $secret;
+        
+        try {
+            $token = $this->createToken($payload);
+        } finally {
+            $this->secret = $originalSecret;
+        }
+
+        return $token;
     }
 }

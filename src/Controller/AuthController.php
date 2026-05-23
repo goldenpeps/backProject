@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
 use App\Service\JWTService;
+use App\Service\SendMailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -165,6 +166,171 @@ class AuthController extends AbstractController
                 'telephone' => $user->getTelephone(),
                 'roles' => $user->getRoles()
             ]
+        ]);
+    }
+    #[Route('/verify/{token}', name: 'api_verify', methods: ['GET'])]
+    public function verify(
+        string $token,
+        JWTService $jwtService,
+        UtilisateurRepository $userRepository,
+        EntityManagerInterface $entityManager
+    ): JsonResponse
+    {
+        if (!$jwtService->isValide($token) || $jwtService->isExpired($token)) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Le token est invalide ou a expiré'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $payload = $jwtService->getPayload($token);
+        if (!$payload || !isset($payload['user_id'])) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Token invalide'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = $userRepository->find($payload['user_id']);
+        if (!$user) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Utilisateur non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if (!$user->isVerified()) {
+            $user->setIsVerified(true);
+            $entityManager->flush();
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Email vérifié avec succès'
+        ]);
+    }
+
+    #[Route('/forgot-password', name: 'api_forgot_password', methods: ['POST'])]
+    public function forgotPassword(
+        Request $request,
+        UtilisateurRepository $userRepository,
+        SendMailService $sendMailService
+    ): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (empty($data['email'])) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Email requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $user = $userRepository->findOneBy(['email' => $data['email']]);
+
+        // Ne pas révéler si l'email existe ou non (sécurité)
+        if (!$user) {
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.'
+            ]);
+        }
+
+        // Générer un token de réinitialisation
+        $resetToken = bin2hex(random_bytes(32));
+        // Vous pouvez stocker ce token en base de données avec une expiration
+        // Pour l'instant, on utilise un token JWT
+        $jwtToken = $this->jwtService->createToken([
+            'user_id' => $user->getId(),
+            'type' => 'password_reset'
+        ]);
+
+        // Envoyer l'email avec le lien de réinitialisation
+        $sendMailService->send(
+            'no-reply@extravittonclop.com',
+            $user->getEmail(),
+            'Réinitialisation de votre mot de passe',
+            'password_reset',
+            [
+                'user' => $user,
+                'token' => $jwtToken,
+                'resetUrl' => 'https://localhost:3000/reset-password/' . $jwtToken // À adapter selon votre config
+            ]
+        );
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.'
+        ]);
+    }
+
+    #[Route('/reset-password', name: 'api_reset_password', methods: ['POST'])]
+    public function resetPassword(
+        Request $request,
+        UtilisateurRepository $userRepository,
+        EntityManagerInterface $entityManager,
+        JWTService $jwtService
+    ): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (empty($data['token']) || empty($data['newPassword']) || empty($data['confirmPassword'])) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Token, nouveau mot de passe et confirmation requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $token = $data['token'];
+
+        // Vérifier le token
+        if (!$jwtService->isValide($token) || $jwtService->isExpired($token)) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Le token est invalide ou a expiré'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $payload = $jwtService->getPayload($token);
+        if (!$payload || !isset($payload['user_id']) || ($payload['type'] ?? null) !== 'password_reset') {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Token invalide'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = $userRepository->find($payload['user_id']);
+        if (!$user) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Utilisateur non trouvé'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Vérifier que les mots de passe correspondent
+        if ($data['newPassword'] !== $data['confirmPassword']) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Les mots de passe ne correspondent pas'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Vérifier la force du mot de passe
+        if (strlen($data['newPassword']) < 8) {
+            return new JsonResponse([
+                'error' => true,
+                'message' => 'Le mot de passe doit contenir au moins 8 caractères'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Hasher et sauvegarder le nouveau mot de passe
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $data['newPassword']);
+        $user->setPassword($hashedPassword);
+        $entityManager->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Mot de passe réinitialisé avec succès'
         ]);
     }
 }
