@@ -245,7 +245,10 @@ class AuthController extends AbstractController
             'type' => 'password_reset'
         ]);
 
+        
         // Envoyer l'email avec le lien de réinitialisation
+        $frontUrl = $_ENV['URL_FRONT'] ?? 'http://localhost:3000'; 
+
         $sendMailService->send(
             'no-reply@extravittonclop.com',
             $user->getEmail(),
@@ -254,9 +257,10 @@ class AuthController extends AbstractController
             [
                 'user' => $user,
                 'token' => $jwtToken,
-                'resetUrl' => 'https://localhost:3000/reset-password/' . $jwtToken // À adapter selon votre config
+                'resetUrl' => $frontUrl . '/reset-password/' . $jwtToken // À adapter selon votre config
             ]
         );
+        
 
         return new JsonResponse([
             'success' => true,
