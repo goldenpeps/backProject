@@ -37,7 +37,7 @@ final class TypePrestationControllerTest extends ApiTestCase
     public function testCreateTypePrestation(): void
     {
         $client = $this->createAuthenticatedClient();
-        $client->request('POST', '/api/admin/type-prestations/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+        $client->request('POST', '/api/admin/type-prestations', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'nom' => 'Test Prestation',
             'description' => 'Test Description',
             'prixUnitaire' => 99.99,
@@ -50,7 +50,7 @@ final class TypePrestationControllerTest extends ApiTestCase
     public function testCreateTypePrestationMissingField(): void
     {
         $client = $this->createAuthenticatedClient();
-        $client->request('POST', '/api/admin/type-prestations/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+        $client->request('POST', '/api/admin/type-prestations', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'nom' => 'Test Prestation',
             'description' => 'Test Description',
         ]));

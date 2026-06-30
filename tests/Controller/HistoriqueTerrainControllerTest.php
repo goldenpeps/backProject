@@ -104,4 +104,71 @@ final class HistoriqueTerrainControllerTest extends ApiTestCase
         self::assertResponseStatusCodeSame(404);
         self::assertResponseHeaderSame('content-type', 'application/json');
     }
+
+    public function testCreateHistoriqueTerrainNotFoundTerrain(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $client->request('POST', '/api/admin/historique-terrain', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'terrain_id' => 999999,
+            'isramassage' => true,
+            'istonte' => false,
+        ]));
+
+        self::assertResponseStatusCodeSame(404);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        self::assertTrue($data['error']);
+    }
+
+    public function testUpdateHistoriqueTerrainWithDates(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $historique = $this->createTestHistoriqueTerrain();
+        $client->request('PUT', '/api/admin/historique-terrain/' . $historique->getId(), [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'isramassage' => true,
+            'dateramage' => '2026-03-15',
+            'istonte' => true,
+            'dateTonte' => '2026-03-16',
+        ]));
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode($client->getResponse()->getContent(), true);
+        self::assertTrue($data['success']);
+    }
+
+    public function testUpdateHistoriqueTerrainClearDates(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $historique = $this->createTestHistoriqueTerrain();
+        $client->request('PUT', '/api/admin/historique-terrain/' . $historique->getId(), [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'dateramage' => null,
+            'dateTonte' => null,
+        ]));
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testUpdateHistoriqueTerrainWithTerrainId(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $historique = $this->createTestHistoriqueTerrain();
+        $newTerrain = $this->createTestTerrain(false);
+        $client->request('PUT', '/api/admin/historique-terrain/' . $historique->getId(), [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'terrain_id' => $newTerrain->getId(),
+        ]));
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testUpdateHistoriqueTerrainTerrainNotFound(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $historique = $this->createTestHistoriqueTerrain();
+        $client->request('PUT', '/api/admin/historique-terrain/' . $historique->getId(), [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'terrain_id' => 999999,
+        ]));
+
+        self::assertResponseStatusCodeSame(404);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        self::assertTrue($data['error']);
+    }
 }

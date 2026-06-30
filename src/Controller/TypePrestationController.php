@@ -52,37 +52,43 @@ final class TypePrestationController extends AbstractController
     }
   
 
-     #[Route('/admin/type-prestations/', name: 'app_type_prestations_create', methods: ['POST'])]
-    public function add(Request $request): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-        $requiredFields = ['nom', 'description', 'prixUnitaire'];
-        foreach ($requiredFields as $field) {
-            if (empty($data[$field])) {
-                return new JsonResponse([
-                    'error' => true,
-                    'message' => "Le champ '$field' est requis"
-                ], JsonResponse::HTTP_BAD_REQUEST);
-            }
-        }
-        $typePrestation = new TypePrestation();
-        $typePrestation->setNom($data['nom']);
-        $typePrestation->setDescription($data['description']);
-        $typePrestation->setPrixUnitaire($data['prixUnitaire']);
-        $this->entityManager->persist($typePrestation);
-        $this->entityManager->flush();
+ #[Route('/admin/type-prestations', name: 'app_type_prestations_create', methods: ['POST'])]
+public function add(Request $request): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+    
+    // 1. Vérifier uniquement les champs vraiment obligatoires
+    // On accepte 'prix_unitaire' (venant du front) ou 'prixUnitaire'
+    $prix = $data['prix_unitaire'] ?? $data['prixUnitaire'] ?? null;
+    $nom = $data['nom'] ?? null;
 
+    if (!$nom || $prix === null) {
         return new JsonResponse([
-            'success' => true,
-            'message' => 'Type de prestation créé avec succès',
-            'typePrestation' => [
-                'id' => $typePrestation->getId(),
-                'nom' => $typePrestation->getNom(),
-                'description' => $typePrestation->getDescription(),
-                'prixUnitaire' => $typePrestation->getPrixUnitaire(),
-            ]
-        ], JsonResponse::HTTP_CREATED);
+            'error' => true,
+            'message' => "Le nom et le prix unitaire sont requis"
+        ], JsonResponse::HTTP_BAD_REQUEST);
     }
+
+    $typePrestation = new TypePrestation();
+    $typePrestation->setNom($nom);
+    // Description optionnelle : on vérifie si elle existe
+    $typePrestation->setDescription($data['description'] ?? null);
+    $typePrestation->setPrixUnitaire($prix);
+
+    $this->entityManager->persist($typePrestation);
+    $this->entityManager->flush();
+
+    return new JsonResponse([
+        'success' => true,
+        'message' => 'Type de prestation créé avec succès',
+        'typePrestation' => [
+            'id' => $typePrestation->getId(),
+            'nom' => $typePrestation->getNom(),
+            'description' => $typePrestation->getDescription(),
+            'prixUnitaire' => $typePrestation->getPrixUnitaire(),
+        ]
+    ], JsonResponse::HTTP_CREATED);
+}
 
     #[Route('/admin/type-prestations/{id}', name: 'app_type_prestation_delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse

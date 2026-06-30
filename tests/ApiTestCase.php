@@ -35,6 +35,7 @@ abstract class ApiTestCase extends WebTestCase
         // Create a test user if it doesn't exist
         $em = self::getEntityManager();
         $user = $em->getRepository(Utilisateur::class)->findOneBy(['email' => $email]);
+        $roles = $jwtPayload['roles'] ?? ['ROLE_USER'];
         if (!$user) {
             $user = new Utilisateur();
             $user->setEmail($email);
@@ -43,7 +44,11 @@ abstract class ApiTestCase extends WebTestCase
             $user->setPrenom('Test');
             $user->setTelephone('0123456789');
             $user->setIsActive(true);
+            $user->setRoles($roles);
             $em->persist($user);
+            $em->flush();
+        } else {
+            $user->setRoles($roles);
             $em->flush();
         }
         

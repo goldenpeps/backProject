@@ -9,7 +9,7 @@ final class TerrainControllerTest extends ApiTestCase
     public function testGetAllTerrains(): void
     {
         $client = $this->createAuthenticatedClient();
-        $client->request('GET', '/api/admin/terrain/');
+        $client->request('GET', '/api/admin/terrains/');
 
         self::assertResponseIsSuccessful();
         self::assertResponseHeaderSame('content-type', 'application/json');
@@ -157,4 +157,37 @@ final class TerrainControllerTest extends ApiTestCase
         self::assertResponseStatusCodeSame(404);
         self::assertResponseHeaderSame('content-type', 'application/json');
     }
+
+    public function testCreateTerrainClientNotFound(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $typeTerrain = $this->createTestTypeTerrain();
+        $client->request('POST', '/api/admin/terrain/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'client_id' => 999999,
+            'type_terrain_id' => $typeTerrain->getId(),
+            'superficie' => 500.00,
+            'commentaire' => 'Test',
+        ]));
+
+        self::assertResponseStatusCodeSame(400);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        self::assertTrue($data['error']);
+    }
+
+    public function testCreateTerrainTypeTerrainNotFound(): void
+    {
+        $client = $this->createAuthenticatedClient();
+        $testClient = $this->createTestClient();
+        $client->request('POST', '/api/admin/terrain/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'client_id' => $testClient->getId(),
+            'type_terrain_id' => 999999,
+            'superficie' => 500.00,
+            'commentaire' => 'Test',
+        ]));
+
+        self::assertResponseStatusCodeSame(400);
+        $data = json_decode($client->getResponse()->getContent(), true);
+        self::assertTrue($data['error']);
+    }
+
 }

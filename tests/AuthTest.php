@@ -316,4 +316,84 @@ class AuthTest extends WebTestCase
 
         $this->assertResponseStatusCodeSame(401);
     }
-}     
+
+    public function testVerifyInvalidToken(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/api/verify/this-is-not-a-valid-jwt-token');
+
+        $this->assertResponseStatusCodeSame(401);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($json['error']);
+    }
+
+    public function testForgotPasswordMissingEmail(): void
+    {
+        $client = static::createClient();
+        $client->request('POST', '/api/forgot-password', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([]));
+
+        $this->assertResponseStatusCodeSame(400);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($json['error']);
+        $this->assertSame('Email requis', $json['message']);
+    }
+
+    public function testForgotPasswordNonExistentEmail(): void
+    {
+        $client = static::createClient();
+        $client->request('POST', '/api/forgot-password', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'email' => 'nonexistent_' . uniqid() . '@example.com',
+        ]));
+
+        $this->assertResponseIsSuccessful();
+        $json = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($json['success']);
+    }
+
+    public function testResetPasswordMissingFields(): void
+    {
+        $client = static::createClient();
+        $client->request('POST', '/api/reset-password', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'token' => 'some-token',
+        ]));
+
+        $this->assertResponseStatusCodeSame(400);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($json['error']);
+    }
+
+    public function testResetPasswordInvalidToken(): void
+    {
+        $client = static::createClient();
+        $client->request('POST', '/api/reset-password', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'token' => 'invalid.jwt.token',
+            'newPassword' => 'NewPassword123!',
+            'confirmPassword' => 'NewPassword123!',
+        ]));
+
+        $this->assertResponseStatusCodeSame(401);
+        $json = json_decode($client->getResponse()->getContent(), true);
+        $this->assertTrue($json['error']);
+    }
+
+    public function testResetPasswordMismatch(): void
+    {
+        $client = static::createClient();
+        $secret = $_ENV['JWT_SECRET'] ?? 'test_secret_key';
+        $token = \Firebase\JWT\JWT::encode([
+            'user_id' => 999999,
+            'type' => 'password_reset',
+            'iat' => time(),
+            'exp' => time() + 3600,
+        ], $secret, 'HS256');
+
+        $client->request('POST', '/api/reset-password', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'token' => $token,
+            'newPassword' => 'NewPassword123!',
+            'confirmPassword' => 'DifferentPassword123!',
+        ]));
+
+        // user_id 999999 n'existe pas → 404
+        $this->assertContains($client->getResponse()->getStatusCode(), [400, 404]);
+    }
+}
