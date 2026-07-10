@@ -1,7 +1,15 @@
+php bin/console doctrine:fixtures:load --no-interaction
+php bin/console doctrine:fixtures:load
+mdp password123
+
+
 _preview_error                   ANY         ANY      ANY    /_error/{code}.{_format}               
   api_register                     POST        ANY      ANY    /api/register                          
   api_login                        POST        ANY      ANY    /api/login                             
   api_me                           GET         ANY      ANY    /api/me                                
+  api_verify                       GET         ANY      ANY    /api/verify/{token}                    
+  api_forgot_password              POST        ANY      ANY    /api/forgot-password                   
+  api_reset_password               POST        ANY      ANY    /api/reset-password                    
   app_client                       POST        ANY      ANY    /api/admin/client                      
   app_get_client                   GET         ANY      ANY    /api/admin/client/{id}                 
   app_get_clients                  GET         ANY      ANY    /api/admin/clients                     
@@ -40,7 +48,7 @@ _preview_error                   ANY         ANY      ANY    /_error/{code}.{_fo
   app_materiel_utilise_create      POST        ANY      ANY    /api/admin/materiels-utilises          
   app_materiel_utilise_update      PUT         ANY      ANY    /api/admin/materiels-utilises/{id}     
   app_materiel_utilise_delete      DELETE      ANY      ANY    /api/admin/materiels-utilises/{id}     
-  app_terrains_list                GET         ANY      ANY    /api/admin/terrain/                    
+  app_terrains_list                GET         ANY      ANY    /api/admin/terrains/                   
   app_terrain_show                 GET         ANY      ANY    /api/admin/terrain/{id}                
   app_terrain_by_client            GET         ANY      ANY    /api/admin/terrain/client/{id}         
   app_create_terrain               POST        ANY      ANY    /api/admin/terrain/                    
@@ -53,7 +61,7 @@ _preview_error                   ANY         ANY      ANY    /_error/{code}.{_fo
   app_type_materriel_update        PUT         ANY      ANY    /api/admin/type-materriel/{id}         
   app_type_prestations_index       GET         ANY      ANY    /api/admin/type-prestations/           
   app_type_prestation              GET         ANY      ANY    /api/admin/type-prestations/{id}       
-  app_type_prestations_create      POST        ANY      ANY    /api/admin/type-prestations/           
+  app_type_prestations_create      POST        ANY      ANY    /api/admin/type-prestations            
   app_type_prestation_delete       DELETE      ANY      ANY    /api/admin/type-prestations/{id}       
   app_type_prestation_update       PUT         ANY      ANY    /api/admin/type-prestations/{id}       
   app_type_terrains_index          GET         ANY      ANY    /api/admin/type-terrain                
@@ -64,4 +72,4 @@ _preview_error                   ANY         ANY      ANY    /_error/{code}.{_fo
   app_utilisateurs                 GET|POST    ANY      ANY    /api/admin/utilisateurs                
   app_utilisateur                  GET         ANY      ANY    /api/admin/utilisateurs/{id}           
   app_utilisateur_deactivate       POST        ANY      ANY    /api/admin/utilisateurs/{id}           
-  app_utilisateur_update           PUT         ANY      ANY    /api/admin/utilisateurs/{id}    
+  app_utilisateur_update           PUT         ANY      ANY    /api/admin/utilisateurs/{id}
