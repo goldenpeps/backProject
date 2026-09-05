@@ -46,6 +46,17 @@ class AppFixtures extends Fixture
     }
 
     /**
+     * Transforme un libelle accentue en identifiant simple utilisable dans un email.
+     */
+    private function slugify(string $value): string
+    {
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
+        $ascii = false === $ascii ? $value : $ascii;
+
+        return strtolower((string) preg_replace('/[^a-zA-Z0-9]/', '', $ascii));
+    }
+
+    /**
      * @return Utilisateur[]
      */
     private function loadUtilisateurs(ObjectManager $manager): array
@@ -56,6 +67,11 @@ class AppFixtures extends Fixture
             ['karim.benali@jardin.fr', 'Benali', 'Karim', '0622334455', ['ROLE_USER']],
             ['lucas.dubois@jardin.fr', 'Dubois', 'Lucas', '0633445566', ['ROLE_USER']],
             ['emma.leroy@jardin.fr', 'Leroy', 'Emma', '0644556677', ['ROLE_USER']],
+            ['julien.girard@jardin.fr', 'Girard', 'Julien', '0655667788', ['ROLE_USER']],
+            ['manon.faure@jardin.fr', 'Faure', 'Manon', '0666778899', ['ROLE_USER']],
+            ['hugo.perrin@jardin.fr', 'Perrin', 'Hugo', '0677889900', ['ROLE_USER']],
+            ['chloe.lopez@jardin.fr', 'Lopez', 'Chloé', '0688990011', ['ROLE_USER']],
+            ['maxime.rey@jardin.fr', 'Rey', 'Maxime', '0699001122', ['ROLE_USER']],
         ];
 
         $utilisateurs = [];
@@ -80,26 +96,26 @@ class AppFixtures extends Fixture
      */
     private function loadClients(ObjectManager $manager): array
     {
-        $data = [
-            ['Durand', 'Jean', '0601020304', 'jean.durand@mail.fr'],
-            ['Petit', 'Marie', '0602030405', 'marie.petit@mail.fr'],
-            ['Moreau', 'Paul', '0603040506', 'paul.moreau@mail.fr'],
-            ['Girard', 'Camille', '0604050607', 'camille.girard@mail.fr'],
-            ['Bonnet', 'Nicolas', '0605060708', 'nicolas.bonnet@mail.fr'],
-            ['Roux', 'Julie', '0606070809', 'julie.roux@mail.fr'],
-            ['Fournier', 'Thomas', '0607080910', 'thomas.fournier@mail.fr'],
-            ['Lambert', 'Claire', '0608091011', 'claire.lambert@mail.fr'],
-            ['Simon', 'Antoine', '0609101112', 'antoine.simon@mail.fr'],
-            ['Michel', 'Laura', '0610111213', 'laura.michel@mail.fr'],
+        $prenoms = [
+            'Jean', 'Marie', 'Paul', 'Camille', 'Nicolas', 'Julie', 'Thomas', 'Claire', 'Antoine', 'Laura',
+            'Sophie', 'Karim', 'Lucas', 'Emma', 'Julien', 'Manon', 'Hugo', 'Chloé', 'Maxime', 'Léa',
+        ];
+        $noms = [
+            'Durand', 'Petit', 'Moreau', 'Girard', 'Bonnet', 'Roux', 'Fournier', 'Lambert', 'Simon', 'Michel',
+            'Garcia', 'David', 'Bertrand', 'Morel', 'Fontaine', 'Chevalier', 'Robin', 'Masson', 'Sanchez', 'Nguyen',
         ];
 
+        $nbClients = 60;
         $clients = [];
-        foreach ($data as [$nom, $prenom, $telephone, $email]) {
+        for ($i = 0; $i < $nbClients; ++$i) {
+            $prenom = $prenoms[$i % count($prenoms)];
+            $nom = $noms[intdiv($i, count($prenoms)) % count($noms)];
+
             $client = new Client();
             $client->setNom($nom);
             $client->setPrenom($prenom);
-            $client->setTelephone($telephone);
-            $client->setEmail($email);
+            $client->setTelephone(sprintf('06%08d', 1020304 + $i * 11));
+            $client->setEmail(sprintf('%s.%s@mail.fr', $this->slugify($prenom), $this->slugify($nom)));
             $manager->persist($client);
             $clients[] = $client;
         }
@@ -117,6 +133,8 @@ class AppFixtures extends Fixture
             ['Jardin fleuri', 'Jardin avec massifs de fleurs et bordures à contourner'],
             ['Terrain en pente', 'Terrain avec dénivelé nécessitant du matériel adapté'],
             ['Terrain synthétique', 'Gazon synthétique nécessitant un entretien spécifique'],
+            ['Talus engazonné', 'Forte pente nécessitant du matériel de tonte adapté'],
+            ['Terrain avec arbres', 'Présence d\'arbres et de racines, attention lors de la tonte'],
         ];
 
         $types = [];
@@ -142,6 +160,9 @@ class AppFixtures extends Fixture
             ['Taille-haie', true],
             ['Souffleur de feuilles', true],
             ['Tracteur tondeuse', false],
+            ['Taille-bordures', true],
+            ['Scarificateur', false],
+            ['Broyeur de végétaux', false],
         ];
 
         $types = [];
@@ -167,6 +188,9 @@ class AppFixtures extends Fixture
             ['Débroussaillage', 'Débroussaillage de terrain', 45.0],
             ['Taille de haie', 'Taille et mise en forme des haies', 30.0],
             ['Désherbage', 'Désherbage manuel ou mécanique', 25.0],
+            ['Scarification', 'Scarification de la pelouse', 40.0],
+            ['Élagage', 'Élagage des arbres et arbustes', 55.0],
+            ['Entretien massifs', 'Entretien des massifs floraux', 28.0],
         ];
 
         $types = [];
@@ -193,6 +217,9 @@ class AppFixtures extends Fixture
             ['Équipe Nord - intervention sur les communes du nord du secteur', [1, 2]],
             ['Équipe Sud - intervention sur les communes du sud du secteur', [3, 4]],
             ['Équipe volante - renfort ponctuel', [1, 4]],
+            ['Équipe Est - intervention sur les communes de l\'est du secteur', [5, 6]],
+            ['Équipe Ouest - intervention sur les communes de l\'ouest du secteur', [7, 8]],
+            ['Équipe Centre - renfort ponctuel', [2, 9]],
         ];
 
         $equipes = [];
@@ -214,8 +241,9 @@ class AppFixtures extends Fixture
      */
     private function loadMaterielsUtilises(ObjectManager $manager): array
     {
+        $nb = 60;
         $materielsUtilises = [];
-        for ($i = 0; $i < 5; ++$i) {
+        for ($i = 0; $i < $nb; ++$i) {
             $materielUtilise = new MaterielUtilise();
             $materielUtilise->setDurrer(new \DateTimeImmutable(sprintf('-%d days', $i * 3)));
             $manager->persist($materielUtilise);
@@ -231,7 +259,8 @@ class AppFixtures extends Fixture
      */
     private function loadMateriels(ObjectManager $manager, array $typesMateriel, array $materielsUtilises): void
     {
-        for ($i = 0; $i < 10; ++$i) {
+        $nb = 60;
+        for ($i = 0; $i < $nb; ++$i) {
             $materiel = new Materiel();
             $materiel->setDisponible(0 !== $i % 3);
             $materiel->setTypeMateriel($typesMateriel[$i % count($typesMateriel)]);
@@ -256,12 +285,20 @@ class AppFixtures extends Fixture
             'Entretien mensuel planifié',
             'Débroussaillage terrain difficile d\'accès',
             'Taille de haie et nettoyage',
+            'Passage scarification de printemps',
+            'Élagage suite à demande client',
+            'Entretien des massifs floraux',
         ];
 
+        // Étalées sur environ 3 mois avant et 3 mois après aujourd'hui, pour que
+        // le planning ait de la matière sur plusieurs semaines passées/futures.
+        $nb = 180;
         $interventions = [];
-        for ($i = 0; $i < 15; ++$i) {
+        for ($i = 0; $i < $nb; ++$i) {
             $intervention = new Intervention();
-            $datePrevue = new \DateTimeImmutable(sprintf('%+d days', $i * 2 - 10));
+            $heure = 8 + ($i % 8);
+            $minute = ($i % 4) * 15;
+            $datePrevue = (new \DateTimeImmutable(sprintf('%+d days', $i - 90)))->setTime($heure, $minute);
             $intervention->setDatePrevue($datePrevue);
             $intervention->setDateRealisation($datePrevue->modify('+2 hours'));
             $intervention->setCommentaire($commentaires[$i % count($commentaires)]);
@@ -296,16 +333,22 @@ class AppFixtures extends Fixture
             ['rue' => '20 rue Victor Hugo', 'codePostal' => '69200', 'ville' => 'Vénissieux'],
             ['rue' => '3 impasse des Tilleuls', 'codePostal' => '69500', 'ville' => 'Bron'],
             ['rue' => '15 route de Genas', 'codePostal' => '69800', 'ville' => 'Saint-Priest'],
+            ['rue' => '7 rue des Fleurs', 'codePostal' => '69003', 'ville' => 'Lyon'],
+            ['rue' => '2 allée des Platanes', 'codePostal' => '69600', 'ville' => 'Oullins'],
+            ['rue' => '9 rue du Stade', 'codePostal' => '69700', 'ville' => 'Givors'],
+            ['rue' => '31 chemin des Vergers', 'codePostal' => '69110', 'ville' => 'Sainte-Foy-lès-Lyon'],
         ];
 
+        $nb = 90;
+        $nbInterventions = count($interventions);
         $terrains = [];
-        for ($i = 0; $i < 12; ++$i) {
+        for ($i = 0; $i < $nb; ++$i) {
             $client = $clients[$i % count($clients)];
             $ville = $villes[$i % count($villes)];
 
             $terrain = new Terrain();
             $terrain->setClient($client);
-            $terrain->setSuperficie(round(150 + $i * 37.5, 1));
+            $terrain->setSuperficie(round(150 + $i * 12.5, 1));
             $terrain->setCommentaire(sprintf('Terrain de %s %s, accès par le portail latéral', $client->getPrenom(), $client->getNom()));
             $terrain->setTypeTerrain($typesTerrain[$i % count($typesTerrain)]);
             $terrain->setAdresse([
@@ -315,12 +358,16 @@ class AppFixtures extends Fixture
                 'ville' => $ville['ville'],
             ]);
             $terrain->setCoordonneesGps([
-                'lat' => round(45.75 + $i * 0.01, 6),
-                'lng' => round(4.85 + $i * 0.01, 6),
+                'lat' => round(45.75 + $i * 0.005, 6),
+                'lng' => round(4.85 + $i * 0.005, 6),
             ]);
 
-            if (0 === $i % 4) {
-                $terrain->setIntervention($interventions[$i % count($interventions)]);
+            // Chaque terrain pointe vers une intervention differente, etalee sur
+            // toute la plage de dates disponible (et pas seulement les premieres),
+            // pour que le planning affiche des vrais noms de client/terrain.
+            if ($nbInterventions > 0) {
+                $interventionIndex = intdiv($i * $nbInterventions, $nb) % $nbInterventions;
+                $terrain->setIntervention($interventions[$interventionIndex]);
             }
 
             $manager->persist($terrain);
@@ -360,11 +407,12 @@ class AppFixtures extends Fixture
     {
         $statuts = ['en_attente', 'accepte', 'refuse', 'annule'];
 
+        $nb = 90;
         $devisList = [];
-        for ($i = 0; $i < 10; ++$i) {
+        for ($i = 0; $i < $nb; ++$i) {
             $devis = new Devis();
-            $devis->setDateDevis(new \DateTimeImmutable(sprintf('-%d days', $i * 4)));
-            $devis->setMontantTotal(round(80 + $i * 23.4, 2));
+            $devis->setDateDevis(new \DateTimeImmutable(sprintf('-%d days', $i * 2)));
+            $devis->setMontantTotal(round(80 + $i * 14.7, 2));
             $devis->setStatus($statuts[$i % count($statuts)]);
             $devis->setClient($clients[$i % count($clients)]);
 
