@@ -80,7 +80,7 @@ final class EquipeInterventionControllerTest extends ApiTestCase
     {
         $client = $this->createAuthenticatedClient();
         $user = $this->createTestUtilisateur();
-        $client->request('POST', '/api/admin/equipe-intervention/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+        $client->request('POST', '/api/admin/equipe-intervention', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'commentaire' => 'Nouvelle équipe test',
             'utilisateurs' => [$user->getId()],
         ]));
@@ -95,7 +95,7 @@ final class EquipeInterventionControllerTest extends ApiTestCase
     {
         $client = $this->createAuthenticatedClient();
         $user = $this->createTestUtilisateur();
-        $client->request('POST', '/api/admin/equipe-intervention/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+        $client->request('POST', '/api/admin/equipe-intervention', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'utilisateurs' => [$user->getId()],
         ]));
 
@@ -104,22 +104,22 @@ final class EquipeInterventionControllerTest extends ApiTestCase
         self::assertTrue($data['error']);
     }
 
-    public function testCreateEquipeInterventionMissingUtilisateur(): void
+    public function testCreateEquipeInterventionWithoutUtilisateur(): void
     {
         $client = $this->createAuthenticatedClient();
-        $client->request('POST', '/api/admin/equipe-intervention/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+        $client->request('POST', '/api/admin/equipe-intervention', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'commentaire' => 'Équipe sans utilisateur',
         ]));
 
-        self::assertResponseStatusCodeSame(400);
+        self::assertResponseStatusCodeSame(201);
         $data = json_decode($client->getResponse()->getContent(), true);
-        self::assertTrue($data['error']);
+        self::assertTrue($data['success']);
     }
 
     public function testCreateEquipeInterventionInvalidUtilisateur(): void
     {
         $client = $this->createAuthenticatedClient();
-        $client->request('POST', '/api/admin/equipe-intervention/', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+        $client->request('POST', '/api/admin/equipe-intervention', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             'commentaire' => 'Équipe utilisateur inexistant',
             'utilisateurs' => [999999],
         ]));

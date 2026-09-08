@@ -25,7 +25,7 @@ final class EquipeInterventionController extends AbstractController
 
     //add
 
-    #[Route('/admin/equipe-intervention/', name: 'app_equipe_intervention_create', methods: ['POST'])]
+    #[Route('/admin/equipe-intervention', name: 'app_equipe_intervention_create', methods: ['POST'])]
     public function add(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -44,13 +44,6 @@ final class EquipeInterventionController extends AbstractController
             $utilisateurIds = $data['utilisateurs'];
         } elseif (!empty($data['utilisateur'])) {
             $utilisateurIds = [$data['utilisateur']];
-        }
-
-        if (count($utilisateurIds) === 0) {
-            return new JsonResponse([
-                'error' => true,
-                'message' => "Le champ 'utilisateur' est requis"
-            ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
         $equipeIntervention = new EquipeIntervention();
