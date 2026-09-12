@@ -1,0 +1,12 @@
+---
+# Déploiement cPanel (Git Version Control > Deployment) déclenché à chaque push.
+# ⚠️ Avant le premier push : remplacer USER et le chemin ci-dessous par le vrai
+# chemin de déploiement de ton compte cPanel, et vérifier via SSH le chemin réel
+# du binaire composer (`which composer`), qui peut différer de celui indiqué ici.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/USER/backProject/
+    - /bin/cp -R * $DEPLOYPATH
+    - /usr/local/bin/composer install --no-dev --optimize-autoloader --working-dir=$DEPLOYPATH
+    - php $DEPLOYPATH/bin/console cache:clear --env=prod --no-debug
+    - php $DEPLOYPATH/bin/console doctrine:migrations:migrate --no-interaction --env=prod
